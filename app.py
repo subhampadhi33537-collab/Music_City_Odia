@@ -1,4 +1,8 @@
 import os
+import sys
+
+# Add the backend directory to sys.path so it can find the 'app' package
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
 
 from app.main import app
 
