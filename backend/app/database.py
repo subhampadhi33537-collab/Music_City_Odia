@@ -8,12 +8,20 @@ def get_db_pool() -> pool.SimpleConnectionPool:
     global _pool
     if _pool is None:
         try:
+            # Add a connect_timeout to fail fast if IPs are blocked
+            dsn = settings.database_url
+            if "?" not in dsn:
+                dsn += "?connect_timeout=10"
+            else:
+                dsn += "&connect_timeout=10"
+                
             _pool = pool.SimpleConnectionPool(
                 1, 20, 
-                dsn=settings.database_url
+                dsn=dsn
             )
         except Exception as e:
-            print(f"Error creating connection pool: {e}")
+            print(f"DATABASE CONNECTION ERROR: {e}")
+            print(f"Make sure you have allowed Render IPs (74.220.49.0/24, 74.220.57.0/24) in your DB dashboard.")
             raise e
     return _pool
 
