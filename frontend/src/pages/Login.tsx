@@ -30,7 +30,7 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetchWithRetry(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/login`, {
+      const response = await fetchWithRetry(`${import.meta.env.VITE_API_BASE_URL || 'https://music-city-odia.onrender.com'}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

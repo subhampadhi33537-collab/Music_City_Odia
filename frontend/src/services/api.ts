@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://music-city-odia.onrender.com';
 
 export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 3000): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
