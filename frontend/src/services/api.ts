@@ -1,5 +1,21 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 3000): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(35000)
+      });
+      return response;
+    } catch (err: any) {
+      if (i === retries) throw err;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Failed to connect after multiple retries');
+}
+
 async function getHeaders(isMultipart = false) {
   const token = localStorage.getItem('sb-token');
   const headers: Record<string, string> = {};
@@ -18,7 +34,7 @@ async function getHeaders(isMultipart = false) {
 export const api = {
   auth: {
     register: async (payload: { full_name: string; phone: string; email: string; password: string }) => {
-      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +199,7 @@ export const api = {
       return res.json();
     }
   },
-
+  
   bookings: {
     submit: async (payload: any) => {
       const res = await fetch(`${API_BASE_URL}/bookings`, {

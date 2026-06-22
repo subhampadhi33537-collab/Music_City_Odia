@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { fetchWithRetry } from '../services/api';
 import { Music, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -29,7 +30,7 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/login`, {
+      const response = await fetchWithRetry(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ export const Login: React.FC = () => {
             className="w-full flex items-center justify-center space-x-2 bg-studio-accent hover:bg-studio-accent/90 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-studio-accent/20 disabled:opacity-50"
           >
             <LogIn className="w-4 h-4" />
-            <span>{loading ? 'Connecting to server (Render cold start)...' : 'Sign In'}</span>
+            <span>{loading ? 'Connecting to server...' : 'Sign In'}</span>
           </button>
         </form>
 

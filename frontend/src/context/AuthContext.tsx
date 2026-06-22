@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { fetchWithRetry } from '../services/api';
 
 interface Profile {
   id: string;
@@ -29,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = useCallback(async (token: string): Promise<Profile | null> => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
