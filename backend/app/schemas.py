@@ -54,6 +54,13 @@ class SongResponse(SongBase):
 class OrderCreate(BaseModel):
     song_ids: List[str]
 
+
+class RegisterRequest(BaseModel):
+    full_name: str
+    phone: str
+    email: str
+    password: str = Field(min_length=6)
+
 class OrderItemResponse(BaseModel):
     id: str
     song_id: str

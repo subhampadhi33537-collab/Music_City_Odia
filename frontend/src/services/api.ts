@@ -1,23 +1,40 @@
-import { supabase } from './supabase';
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 async function getHeaders(isMultipart = false) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const token = localStorage.getItem('sb-token');
   const headers: Record<string, string> = {};
   
   if (!isMultipart) {
     headers['Content-Type'] = 'application/json';
   }
   
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   
   return headers;
 }
 
 export const api = {
+  auth: {
+    register: async (payload: { full_name: string; phone: string; email: string; password: string }) => {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.message || 'Failed to create account');
+      }
+
+      return res.json();
+    },
+  },
+
   songs: {
     list: async (genreId?: string, search?: string) => {
       let url = `${API_BASE_URL}/songs`;
@@ -163,6 +180,25 @@ export const api = {
       const headers = await getHeaders();
       const res = await fetch(`${API_BASE_URL}/admin/stats`, { headers });
       if (!res.ok) throw new Error('Failed to load admin metrics');
+      return res.json();
+    }
+  },
+
+  bookings: {
+    submit: async (payload: any) => {
+      const res = await fetch(`${API_BASE_URL}/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.message || 'Failed to submit booking');
+      }
+
       return res.json();
     }
   }

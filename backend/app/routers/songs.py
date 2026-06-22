@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List, Optional
-from app.database import supabase_client
-from app.auth import get_current_user
-from app.config import settings
+from flask import Blueprint, request
 
-router = APIRouter(prefix="/songs", tags=["songs"])
+from app.auth import require_current_user
+from app.config import settings
+from app.database import supabase_client
+from app.flask_utils import json_response
+from app.http import HTTPException, status
+
+songs_bp = Blueprint("songs", __name__)
 
 MOCK_SONG = {
     "id": "mock-song-1",
@@ -20,16 +22,18 @@ MOCK_SONG = {
     "genres": {"name": "Odia Pop"},
 }
 
+
 def is_mock_mode() -> bool:
     return "placeholder" in settings.supabase_service_role_key
+
 
 def mock_song_or_404(song_id: str) -> dict:
     if song_id == MOCK_SONG["id"]:
         return dict(MOCK_SONG)
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
+
 
 def format_song_record(song: dict) -> dict:
-    """Attach public preview/cover URLs to a song record."""
     if song.get("preview_storage_path") and not song["preview_storage_path"].startswith("http"):
         try:
             song["preview_url"] = supabase_client.storage.from_("song-previews").get_public_url(song["preview_storage_path"])
@@ -48,147 +52,137 @@ def format_song_record(song: dict) -> dict:
 
     return song
 
-@router.get("", response_model=List[dict])
-def list_songs(
-    genre_id: Optional[str] = Query(None, description="Filter by genre ID"),
-    search: Optional[str] = Query(None, description="Search by title or artist"),
-):
+
+@songs_bp.route("/songs", methods=["GET"])
+def list_songs():
+    genre_id = request.args.get("genre_id")
+    search = request.args.get("search")
+
     try:
-        # Build query
-        query = supabase_client.table("songs").select("*, genres(name)").eq("is_published", True)
-        if genre_id:
-            query = query.eq("genre_id", genre_id)
-        
-        response = query.execute()
-        songs = response.data or []
-        
-        # Filter search locally (PostgREST does not support clean OR queries across relation/table columns easily)
+        from app.database import get_songs
+        songs = get_songs(genre_id=genre_id)
+
         if search:
             search_lower = search.lower()
             songs = [
-                s for s in songs 
-                if search_lower in s.get("title", "").lower() or search_lower in s.get("artist", "").lower()
+                song for song in songs
+                if search_lower in song.get("title", "").lower() or search_lower in song.get("artist", "").lower()
             ]
-        
-        # Format storage paths to absolute URLs
-        for song in songs:
-            format_song_record(song)
-                
-        return songs
-    except Exception as e:
-        # Fail-soft: if supabase client is not connected properly due to placeholder keys, return empty or dummy list
-        if "placeholder" in settings.supabase_service_role_key:
-            return [dict(MOCK_SONG)]
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-@router.get("/{id}", response_model=dict)
+        for song in songs:
+            # Map genre_name back to the expected structure for frontend compatibility
+            if "genre_name" in song:
+                song["genres"] = {"name": song["genre_name"]}
+            format_song_record(song)
+
+        return json_response(songs)
+    except Exception as e:
+        if is_mock_mode():
+            return json_response([dict(MOCK_SONG)])
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error: {str(e)}")
+
+
+@songs_bp.route("/songs/<id>", methods=["GET"])
 def get_song(id: str):
     try:
-        response = supabase_client.table("songs").select("*, genres(name)").eq("id", id).execute()
-        if not response.data or len(response.data) == 0:
+        from app.database import get_song_by_id
+        song = get_song_by_id(id)
+        if not song:
             if is_mock_mode():
-                return mock_song_or_404(id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
-        
-        song = response.data[0]
+                return json_response(mock_song_or_404(id))
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
+
+        if "genre_name" in song:
+            song["genres"] = {"name": song["genre_name"]}
         format_song_record(song)
-        return song
+        return json_response(song)
     except HTTPException:
         raise
     except Exception as e:
         if is_mock_mode():
-            return mock_song_or_404(id)
-        raise HTTPException(status_code=500, detail=str(e))
+            return json_response(mock_song_or_404(id))
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
 
-@router.get("/{id}/download")
-def download_song(id: str, current_user: dict = Depends(get_current_user)):
+
+@songs_bp.route("/songs/<id>/download", methods=["GET"])
+@require_current_user
+def download_song(current_user: dict, id: str):
     user_id = current_user["id"]
     is_admin = current_user.get("is_admin", False)
-    
-    # 1. Ownership check (Skip if user is Admin)
+
     if not is_admin:
         try:
-            # Query purchases table
-            purchase_check = supabase_client.table("purchases").select("*").eq("user_id", user_id).eq("song_id", id).execute()
-            if not purchase_check.data or len(purchase_check.data) == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You must purchase this song to download it."
-                )
+            from app.database import check_user_purchase
+            if not check_user_purchase(user_id, id):
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "You must purchase this song to download it.")
         except HTTPException:
             raise
         except Exception as e:
             if "placeholder" in settings.supabase_service_role_key:
-                # Under local/mock setup, if purchase table doesn't exist yet, raise 403 to simulate gated access
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Mock Gate: Purchase check failed for placeholder config."
-                )
-            raise HTTPException(status_code=500, detail=f"Database error checking purchase: {str(e)}")
-            
-    # 2. Get song and create short-lived signed URL
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "Mock Gate: Purchase check failed for placeholder config.")
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error checking purchase: {str(e)}")
+
     try:
-        response = supabase_client.table("songs").select("full_storage_path").eq("id", id).execute()
-        if not response.data or len(response.data) == 0:
+        from app.database import get_song_by_id
+        song = get_song_by_id(id)
+        if not song:
             if is_mock_mode():
-                return {"download_url": MOCK_SONG["preview_url"]}
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
-        
-        full_path = response.data[0]["full_storage_path"]
-        
-        # If it's already a full HTTP URL, return it directly
+                return json_response({"download_url": MOCK_SONG["preview_url"]})
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
+
+        full_path = song["full_storage_path"]
+        if not full_path:
+             raise HTTPException(status.HTTP_404_NOT_FOUND, "Full track not available for this song")
+             
         if full_path.startswith("http"):
-            return {"download_url": full_path}
-            
-        # Generate signed URL (expires in 5 minutes / 300 seconds)
+            return json_response({"download_url": full_path})
+
         res = supabase_client.storage.from_("song-full").create_signed_url(full_path, 300)
         signed_url = res.get("signedURL") or res.get("url")
-        return {"download_url": signed_url}
+        return json_response({"download_url": signed_url})
     except Exception as e:
         if is_mock_mode():
-            return {"download_url": MOCK_SONG["preview_url"]}
-        raise HTTPException(status_code=500, detail=f"Error generating signed URL: {str(e)}")
+            return json_response({"download_url": MOCK_SONG["preview_url"]})
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Error generating signed URL: {str(e)}")
 
-@router.get("/{id}/stream")
-def stream_song(id: str, current_user: dict = Depends(get_current_user)):
-    # Reuses the exact same purchase verification & signed URL logic as /download
+
+@songs_bp.route("/songs/<id>/stream", methods=["GET"])
+@require_current_user
+def stream_song(current_user: dict, id: str):
     user_id = current_user["id"]
     is_admin = current_user.get("is_admin", False)
-    
+
     if not is_admin:
         try:
-            purchase_check = supabase_client.table("purchases").select("*").eq("user_id", user_id).eq("song_id", id).execute()
-            if not purchase_check.data or len(purchase_check.data) == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You must purchase this song to stream it."
-                )
+            from app.database import check_user_purchase
+            if not check_user_purchase(user_id, id):
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "You must purchase this song to stream it.")
         except HTTPException:
             raise
         except Exception as e:
             if "placeholder" in settings.supabase_service_role_key:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Mock Gate: Purchase check failed for placeholder config."
-                )
-            raise HTTPException(status_code=500, detail=f"Database error checking purchase: {str(e)}")
-            
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "Mock Gate: Purchase check failed for placeholder config.")
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error checking purchase: {str(e)}")
+
     try:
-        response = supabase_client.table("songs").select("full_storage_path").eq("id", id).execute()
-        if not response.data or len(response.data) == 0:
+        from app.database import get_song_by_id
+        song = get_song_by_id(id)
+        if not song:
             if is_mock_mode():
-                return {"stream_url": MOCK_SONG["preview_url"]}
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
-        
-        full_path = response.data[0]["full_storage_path"]
-        
+                return json_response({"stream_url": MOCK_SONG["preview_url"]})
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
+
+        full_path = song["full_storage_path"]
+        if not full_path:
+             raise HTTPException(status.HTTP_404_NOT_FOUND, "Full track not available for this song")
+
         if full_path.startswith("http"):
-            return {"stream_url": full_path}
-            
+            return json_response({"stream_url": full_path})
+
         res = supabase_client.storage.from_("song-full").create_signed_url(full_path, 300)
         signed_url = res.get("signedURL") or res.get("url")
-        return {"stream_url": signed_url}
+        return json_response({"stream_url": signed_url})
     except Exception as e:
         if is_mock_mode():
-            return {"stream_url": MOCK_SONG["preview_url"]}
-        raise HTTPException(status_code=500, detail=f"Error generating signed URL: {str(e)}")
+            return json_response({"stream_url": MOCK_SONG["preview_url"]})
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Error generating signed URL: {str(e)}")

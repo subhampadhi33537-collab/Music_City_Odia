@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Send, CheckCircle2 } from 'lucide-react';
+import { Phone, Mail, MapPin, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { api } from '../services/api';
 
 export const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -10,13 +11,24 @@ export const Contact: React.FC = () => {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API booking submit
-    setSubmitted(true);
-    setFormData({ name: '', email: '', phone: '', service: 'recording', message: '' });
-    setTimeout(() => setSubmitted(false), 5000);
+    setError(null);
+    setLoading(true);
+    
+    try {
+      await api.bookings.submit(formData);
+      setSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', service: 'recording', message: '' });
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit booking request.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

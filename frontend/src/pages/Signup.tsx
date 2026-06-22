@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabase';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Music, Mail, Lock, UserPlus, Phone, User, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Music, Mail, Lock, UserPlus, Phone, User, AlertCircle } from 'lucide-react';
 
 export const Signup: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -13,22 +13,12 @@ export const Signup: React.FC = () => {
   
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [successEmail, setSuccessEmail] = useState('');
 
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
+  const { login } = useAuth();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -37,31 +27,16 @@ export const Signup: React.FC = () => {
 
     setLoading(true);
 
-    const registeredEmail = email;
-
     try {
-      const { error: authErr } = await supabase.auth.signUp({
+      const data = await api.auth.register({
+        full_name: fullName,
+        phone,
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: phone
-          }
-        }
       });
 
-      if (authErr) {
-        setError(authErr.message);
-      } else {
-        setSuccessEmail(registeredEmail);
-        setSuccess(true);
-        // Clear fields
-        setFullName('');
-        setPhone('');
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
+      if (data.access_token) {
+        await login(data.access_token);
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred during signup.');
@@ -94,19 +69,7 @@ export const Signup: React.FC = () => {
           </div>
         )}
 
-        {success ? (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-xl flex flex-col items-center text-center space-y-4">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 animate-bounce" />
-            <h4 className="font-bold text-white text-lg">Registration Successful!</h4>
-            <p className="text-xs text-gray-400">
-              Please check your inbox at <strong className="text-gray-300">{successEmail}</strong> to verify your email. Once confirmed, you can sign in to purchase tracks.
-            </p>
-            <Link to="/login" className="text-xs font-semibold bg-studio-accent text-white px-4 py-2 rounded-lg hover:bg-studio-accent/90 transition-colors">
-              Go to Sign In
-            </Link>
-          </div>
-        ) : (
-          <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-400">Full Name</label>
@@ -195,7 +158,6 @@ export const Signup: React.FC = () => {
               <span>{loading ? 'Creating Account...' : 'Register'}</span>
             </button>
           </form>
-        )}
 
         <div className="border-t border-studio-border pt-4 text-center text-xs text-studio-muted">
           <span>Already have an account? </span>

@@ -1,118 +1,86 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../services/supabase';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 interface Profile {
   id: string;
   full_name: string;
+  email: string;
   phone: string;
   is_admin: boolean;
-  created_at: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: any | null;
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
-  signOut: () => Promise<void>;
+  login: (token: string) => Promise<void>;
+  signOut: () => void;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string, retryCount = 0): Promise<Profile | null> => {
+  const fetchProfile = useCallback(async (token: string): Promise<Profile | null> => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      if (error) {
-        // If row is not found, retry up to 3 times with a delay (waiting for Postgres trigger on signup)
-        if (error.code === 'PGRST116' && retryCount < 3) {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          return fetchProfile(userId, retryCount + 1);
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        return null;
-      }
-      return data as Profile;
+      });
+      if (!res.ok) return null;
+      return await res.json();
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      console.error('Error fetching profile:', err);
       return null;
     }
+  }, []);
+
+  const login = async (token: string) => {
+    localStorage.setItem('sb-token', token);
+    const p = await fetchProfile(token);
+    setProfile(p);
+  };
+
+  const signOut = () => {
+    localStorage.removeItem('sb-token');
+    setProfile(null);
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      const p = await fetchProfile(user.id);
+    const token = localStorage.getItem('sb-token');
+    if (token) {
+      const p = await fetchProfile(token);
       setProfile(p);
     }
   };
 
   useEffect(() => {
-    // 1. Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id).then(p => {
-          setProfile(p);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // 2. Subscribe to auth state updates
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      setSession(currentSession);
-      const currentUser = currentSession?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        setLoading(true);
-        const p = await fetchProfile(currentUser.id);
+    const initAuth = async () => {
+      const token = localStorage.getItem('sb-token');
+      if (token) {
+        const p = await fetchProfile(token);
         setProfile(p);
-      } else {
-        setProfile(null);
       }
       setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
     };
-  }, []);
-
-  const signOut = async () => {
-    setLoading(true);
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-    setLoading(false);
-  };
+    initAuth();
+  }, [fetchProfile]);
 
   const isAdmin = profile?.is_admin || false;
 
   return (
     <AuthContext.Provider value={{
-      user,
-      session,
+      user: profile, // Use profile as user for compatibility
       profile,
       loading,
       isAdmin,
+      login,
       signOut,
       refreshProfile
     }}>

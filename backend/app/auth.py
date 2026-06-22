@@ -1,89 +1,77 @@
+from functools import wraps
 import jwt
-from fastapi import HTTPException, Security, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from flask import request
 from app.config import settings
-from app.database import supabase_client
+from app.database import get_db_connection, release_db_connection
+from app.http import HTTPException, status
 
-security = HTTPBearer(auto_error=False)
+def verify_token() -> dict:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authorization header is missing")
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> dict:
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header is missing",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    token = credentials.credentials
+    token = auth_header.removeprefix("Bearer ").strip()
     try:
-        # Supabase JWT signature is validated against the JWT secret using HS256
         payload = jwt.decode(
             token,
             settings.supabase_jwt_secret,
             algorithms=["HS256"],
-            options={"verify_aud": False}
+            options={"verify_aud": False},
         )
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token has expired")
     except jwt.InvalidTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, f"Invalid authentication credentials: {str(e)}")
 
-def get_current_user(payload: dict = Security(verify_token)) -> dict:
+def get_current_user() -> dict:
+    payload = verify_token()
     user_id = payload.get("sub")
     email = payload.get("email")
     if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload: missing sub (user_id)",
-        )
-    
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token payload: missing sub (user_id)")
+
+    conn = get_db_connection()
     try:
-        # Query the profile table to get is_admin flag and metadata
-        response = supabase_client.table("profiles").select("*").eq("id", user_id).execute()
-        if response.data and len(response.data) > 0:
-            profile = response.data[0]
-            profile["email"] = email
-            return profile
+        cur = conn.cursor()
+        cur.execute("SELECT id, full_name, email, phone, is_admin FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        cur.close()
         
-        # Fallback profile if database does not contain it yet (e.g. trigger delay or custom user creation)
+        if user:
+            return {
+                "id": str(user[0]),
+                "full_name": user[1],
+                "email": user[2],
+                "phone": user[3],
+                "is_admin": user[4]
+            }
+
+        # Fallback for JWTs that might exist but not be in our DB yet (if any)
         return {
-            "id": user_id,
+            "id": str(user_id),
             "email": email,
             "full_name": "New User",
             "phone": "",
-            "is_admin": False
+            "is_admin": False,
         }
     except Exception as e:
-        # If DB connection failed (e.g., local test with placeholder key), return mock profile if we are in dev/placeholder mode
-        if "placeholder" in settings.supabase_service_role_key:
-            # Under mock context, check if email has "admin" in it to simulate admin role for testing
-            is_admin = email is not None and "admin" in email.lower()
-            return {
-                "id": user_id,
-                "email": email,
-                "full_name": "Mock User",
-                "phone": "+919937987978",
-                "is_admin": is_admin
-            }
-        
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error reading user profile: {str(e)}"
-        )
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Error reading user profile: {str(e)}")
+    finally:
+        release_db_connection(conn)
 
-def get_admin_user(current_user: dict = Security(get_current_user)) -> dict:
-    if not current_user.get("is_admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access forbidden: Admin role required",
-        )
-    return current_user
+def require_current_user(view_function):
+    @wraps(view_function)
+    def wrapper(*args, **kwargs):
+        current_user = get_current_user()
+        return view_function(current_user, *args, **kwargs)
+    return wrapper
+
+def require_admin_user(view_function):
+    @wraps(view_function)
+    def wrapper(*args, **kwargs):
+        current_user = get_current_user()
+        if not current_user.get("is_admin"):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Access forbidden: Admin role required")
+        return view_function(current_user, *args, **kwargs)
+    return wrapper

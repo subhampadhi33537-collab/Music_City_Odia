@@ -1,21 +1,24 @@
-from fastapi import APIRouter, HTTPException
-from typing import List
-from app.database import supabase_client
+from flask import Blueprint
+
 from app.config import settings
+from app.flask_utils import json_response
+from app.http import HTTPException, status
 
-router = APIRouter(prefix="/genres", tags=["genres"])
+genres_bp = Blueprint("genres", __name__)
 
-@router.get("", response_model=List[dict])
+
+@genres_bp.route("/genres", methods=["GET"])
 def list_genres():
     try:
-        response = supabase_client.table("genres").select("*").execute()
-        return response.data or []
+        from app.database import get_genres
+        genres = get_genres()
+        return json_response(genres)
     except Exception as e:
         if "placeholder" in settings.supabase_service_role_key:
-            return [
+            return json_response([
                 {"id": "genre-1", "name": "Odia Pop"},
                 {"id": "genre-2", "name": "Sambalpuri Folk"},
                 {"id": "genre-3", "name": "Bhajan"},
-                {"id": "genre-4", "name": "Romantic"}
-            ]
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+                {"id": "genre-4", "name": "Romantic"},
+            ])
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error: {str(e)}")
