@@ -136,7 +136,7 @@ npm install
 ```env
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=https://music-city-odia.onrender.com
 VITE_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxx
 ```
 
