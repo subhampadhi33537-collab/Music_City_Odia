@@ -1,3 +1,4 @@
+flask-cors==4.0.0
 Flask==3.0.2
 pydantic==2.6.4
 pydantic-settings==2.2.1
