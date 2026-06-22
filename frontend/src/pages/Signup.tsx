@@ -155,7 +155,7 @@ export const Signup: React.FC = () => {
               className="w-full flex items-center justify-center space-x-2 bg-studio-accent hover:bg-studio-accent/90 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-studio-accent/20 disabled:opacity-50"
             >
               <UserPlus className="w-4 h-4" />
-              <span>{loading ? 'Creating Account...' : 'Register'}</span>
+              <span>{loading ? 'Connecting to server (Render cold start)...' : 'Register'}</span>
             </button>
           </form>
 

@@ -1,7 +1,5 @@
 import os
-
 from flask import Flask, request
-from flask_cors import CORS
 
 from app.flask_utils import json_response
 from app.http import HTTPException, status
@@ -15,13 +13,37 @@ from app.routers.bookings import bookings_bp
 
 app = Flask(__name__)
 
-# Standard CORS initialization
-CORS(app, resources={r"/*": {"origins": [
-    "https://music-city-odia.vercel.app", 
-    "https://music-city-odia.onrender.com",
-    "http://localhost:5173", 
-    "http://127.0.0.1:5173"
-], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}}, supports_credentials=True)
+ALLOWED_ORIGINS = {
+    origin.strip()
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "https://music-city-odia.vercel.app,http://localhost:5173,http://127.0.0.1:5173").split(",")
+    if origin.strip()
+}
+
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = app.make_default_options_response()
+        return add_cors_headers(response)
+
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin")
+    is_allowed = False
+    if origin:
+        if origin in ALLOWED_ORIGINS or "*" in ALLOWED_ORIGINS:
+            is_allowed = True
+        elif any(o == "*.vercel.app" and origin.endswith(".vercel.app") for o in ALLOWED_ORIGINS):
+            is_allowed = True
+            
+    if is_allowed:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Requested-With"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Vary"] = "Origin"
+    return response
 
 @app.errorhandler(HTTPException)
 def handle_http_exception(error):
