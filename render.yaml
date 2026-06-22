@@ -2,6 +2,7 @@ services:
   - type: web
     name: music-city-odia-backend
     env: python
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:app
     plan: free
