@@ -18,7 +18,7 @@ typing-extensions==4.12.2
 
 # Supabase ecosystem — all pinned to compatible versions
 supabase==2.10.0
-gotrue==2.9.0
+gotrue==2.10.0 
 postgrest==0.18.0
 realtime==2.0.2
 storage3==0.10.0
