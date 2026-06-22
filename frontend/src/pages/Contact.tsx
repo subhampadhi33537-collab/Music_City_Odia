@@ -107,6 +107,13 @@ export const Contact: React.FC = () => {
         <div className="lg:col-span-7 glass border border-studio-border p-6 sm:p-8 rounded-2xl text-left">
           <h3 className="text-xl font-bold text-white mb-6">Send a Booking Message</h3>
           
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg flex items-start space-x-2 text-sm mb-6">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {submitted ? (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-8 text-center flex flex-col items-center justify-center space-y-4 min-h-[300px]">
               <CheckCircle2 className="w-16 h-16 text-emerald-500" />
@@ -187,10 +194,11 @@ export const Contact: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center space-x-2 bg-studio-accent hover:bg-studio-accent/90 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-studio-accent/20"
+                disabled={loading}
+                className="w-full flex items-center justify-center space-x-2 bg-studio-accent hover:bg-studio-accent/90 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-studio-accent/20 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
-                <span>Submit Booking Request</span>
+                <span>{loading ? 'Submitting...' : 'Submit Booking Request'}</span>
               </button>
             </form>
           )}

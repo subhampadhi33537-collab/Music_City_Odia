@@ -6,6 +6,7 @@ interface Profile {
   email: string;
   phone: string;
   is_admin: boolean;
+  created_at?: string;
 }
 
 interface AuthContextType {

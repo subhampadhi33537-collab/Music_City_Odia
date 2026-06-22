@@ -82,7 +82,7 @@ export const Account: React.FC = () => {
           </div>
 
           <div className="w-full border-t border-studio-border pt-4 text-xs text-studio-muted text-left space-y-1.5">
-            <p>Member since: {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}</p>
+            <p>Member since: {profile?.created_at ? new Date(profile.created_at as string).toLocaleDateString() : 'N/A'}</p>
             <p className="break-all">Email: {user.email}</p>
           </div>
 

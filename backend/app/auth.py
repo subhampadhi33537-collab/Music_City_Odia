@@ -34,7 +34,7 @@ def get_current_user() -> dict:
     conn = get_db_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, full_name, email, phone, is_admin FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT id, full_name, email, phone, is_admin, created_at FROM users WHERE id = %s", (user_id,))
         user = cur.fetchone()
         cur.close()
         
@@ -44,7 +44,8 @@ def get_current_user() -> dict:
                 "full_name": user[1],
                 "email": user[2],
                 "phone": user[3],
-                "is_admin": user[4]
+                "is_admin": user[4],
+                "created_at": user[5].isoformat() if user[5] else None
             }
 
         # Fallback for JWTs that might exist but not be in our DB yet (if any)
