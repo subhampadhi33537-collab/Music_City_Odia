@@ -61,20 +61,20 @@ export const api = {
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
       
-      const res = await fetch(url);
+      const res = await fetchWithRetry(url);
       if (!res.ok) throw new Error('Failed to load songs');
       return res.json();
     },
     
     get: async (id: string) => {
-      const res = await fetch(`${API_BASE_URL}/songs/${id}`);
+      const res = await fetchWithRetry(`${API_BASE_URL}/songs/${id}`);
       if (!res.ok) throw new Error('Failed to load song details');
       return res.json();
     },
     
     getDownloadUrl: async (id: string) => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/songs/${id}/download`, { headers });
+      const res = await fetchWithRetry(`${API_BASE_URL}/songs/${id}/download`, { headers });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Failed to get download link');
@@ -84,7 +84,7 @@ export const api = {
     
     getStreamUrl: async (id: string) => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/songs/${id}/stream`, { headers });
+      const res = await fetchWithRetry(`${API_BASE_URL}/songs/${id}/stream`, { headers });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Failed to get streaming link');
@@ -95,7 +95,7 @@ export const api = {
   
   genres: {
     list: async () => {
-      const res = await fetch(`${API_BASE_URL}/genres`);
+      const res = await fetchWithRetry(`${API_BASE_URL}/genres`);
       if (!res.ok) throw new Error('Failed to load genres');
       return res.json();
     }
@@ -104,7 +104,7 @@ export const api = {
   orders: {
     create: async (songIds: string[]) => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/orders`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/orders`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ song_ids: songIds })
@@ -118,7 +118,7 @@ export const api = {
     
     verify: async (orderId: string, paymentId: string, signature: string) => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/orders/verify`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/orders/verify`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -136,7 +136,7 @@ export const api = {
     
     listPurchases: async () => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/me/purchases`, { headers });
+      const res = await fetchWithRetry(`${API_BASE_URL}/me/purchases`, { headers });
       if (!res.ok) throw new Error('Failed to load purchases library');
       return res.json();
     }
@@ -145,14 +145,14 @@ export const api = {
   admin: {
     listSongs: async () => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/admin/songs`, { headers });
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/songs`, { headers });
       if (!res.ok) throw new Error('Failed to load admin song inventory');
       return res.json();
     },
 
     uploadSong: async (formData: FormData) => {
       const headers = await getHeaders(true); // Is multipart
-      const res = await fetch(`${API_BASE_URL}/admin/songs`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/songs`, {
         method: 'POST',
         headers,
         body: formData
@@ -166,7 +166,7 @@ export const api = {
     
     updateSong: async (id: string, payload: any) => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/admin/songs/${id}`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/songs/${id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(payload)
@@ -177,7 +177,7 @@ export const api = {
     
     deleteSong: async (id: string) => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/admin/songs/${id}`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/songs/${id}`, {
         method: 'DELETE',
         headers
       });
@@ -187,14 +187,14 @@ export const api = {
     
     listOrders: async () => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/admin/orders`, { headers });
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/orders`, { headers });
       if (!res.ok) throw new Error('Failed to load admin orders log');
       return res.json();
     },
     
     getStats: async () => {
       const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/admin/stats`, { headers });
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/stats`, { headers });
       if (!res.ok) throw new Error('Failed to load admin metrics');
       return res.json();
     }
@@ -202,7 +202,7 @@ export const api = {
   
   bookings: {
     submit: async (payload: any) => {
-      const res = await fetch(`${API_BASE_URL}/bookings`, {
+      const res = await fetchWithRetry(`${API_BASE_URL}/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
