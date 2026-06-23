@@ -35,10 +35,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           'Authorization': `Bearer ${token}`
         }
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Failed to fetch profile:', res.status, errorData);
+        return null;
+      }
       return await res.json();
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.error('Network error fetching profile:', err);
       return null;
     }
   }, []);

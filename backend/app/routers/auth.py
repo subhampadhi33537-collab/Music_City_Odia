@@ -5,7 +5,7 @@ import jwt
 from flask import Blueprint, request
 from app.auth import require_current_user
 from app.config import settings
-from app.database import get_db_connection, release_db_connection
+from app.database import get_db_connection, release_db_connection, update_user_profile
 from app.flask_utils import get_json_body, json_response
 from app.http import HTTPException, status
 from app.schemas import RegisterRequest
@@ -70,6 +70,37 @@ def register_user():
 @require_current_user
 def get_me(current_user: dict):
     return json_response(current_user)
+
+@auth_bp.route("/auth/profile", methods=["PUT"])
+@require_current_user
+def update_profile(current_user: dict):
+    data = get_json_body()
+    full_name = data.get("full_name")
+    phone = data.get("phone")
+    
+    if not full_name:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Full name is required")
+        
+    try:
+        # Get ID from current_user (which should already be in our required format)
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User ID missing from session")
+            
+        updated_profile = update_user_profile(user_id, full_name, phone)
+        if not updated_profile:
+            # If not found by ID, maybe it's an email search fallback? 
+            # But let's stay with ID for now as it's more secure.
+            raise HTTPException(status.HTTP_404_NOT_FOUND, f"User session valid but record not found in database for ID: {user_id}")
+            
+        return json_response({
+            "status": "success",
+            "message": "Profile updated successfully",
+            "profile": updated_profile
+        })
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Failed to update profile: {str(e)}")
 
 @auth_bp.route("/auth/login", methods=["POST"])
 def login_user():

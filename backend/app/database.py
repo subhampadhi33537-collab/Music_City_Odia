@@ -93,6 +93,22 @@ def check_multiple_purchases(user_id, song_ids):
     results = execute_query(query, [user_id] + list(song_ids), fetch=True)
     return [r['song_id'] for r in results]
 
+# --- User Profile Helpers ---
+def update_user_profile(user_id, full_name, phone):
+    query = """
+        UPDATE users 
+        SET "full_name" = %s, "phone" = %s 
+        WHERE "id" = %s 
+        RETURNING "id", "full_name", "email", "phone", "is_admin", "created_at"
+    """
+    # Cast user_id to int only if it's a numeric string, otherwise pass as is (for UUID support if needed)
+    try:
+        id_val = int(user_id)
+    except (ValueError, TypeError):
+        id_val = user_id
+        
+    return execute_query_one(query, (full_name, phone, id_val))
+
 def get_song_by_id(song_id):
     query = """
         SELECT s.*, g.name as genre_name 

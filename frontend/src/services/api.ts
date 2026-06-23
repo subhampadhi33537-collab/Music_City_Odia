@@ -49,6 +49,21 @@ export const api = {
 
       return res.json();
     },
+    updateProfile: async (payload: { full_name: string; phone: string }) => {
+      const headers = await getHeaders();
+      const res = await fetchWithRetry(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.message || 'Failed to update profile');
+      }
+
+      return res.json();
+    },
   },
 
   songs: {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabase';
+import { api } from '../services/api';
 import { User, Phone, Mail, Save, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,23 +31,22 @@ export const Account: React.FC = () => {
     setSaveLoading(true);
 
     try {
-      const { error: dbErr } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName,
-          phone: phone
-        })
-        .eq('id', user.id);
+      await api.auth.updateProfile({
+        full_name: fullName,
+        phone: phone
+      });
 
-      if (dbErr) {
-        setError(dbErr.message);
-      } else {
-        await refreshProfile();
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 4000);
-      }
+      await refreshProfile();
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred saving changes.');
+      console.error('Profile update error:', err);
+      const msg = err.message || 'An unexpected error occurred saving changes.';
+      setError(msg);
+      
+      if (msg.includes('not found') || msg.includes('404')) {
+        setError(`${msg}. Please try logging out and logging back in to refresh your session.`);
+      }
     } finally {
       setSaveLoading(false);
     }
