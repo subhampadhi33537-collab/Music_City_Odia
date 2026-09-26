@@ -7,6 +7,7 @@ import { Footer } from './components/Footer';
 import { AudioPlayer } from './components/AudioPlayer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminRoute } from './components/AdminRoute';
+import { Atmosphere3D } from './components/Atmosphere3D';
 
 // Public Pages
 import { Home } from './pages/Home';
@@ -36,7 +37,10 @@ function App() {
       <AuthProvider>
         <AudioPlayerProvider>
           <CartProvider>
-            <div className="flex flex-col min-h-screen bg-studio-dark text-white selection:bg-studio-accent selection:text-white">
+            <div className="flex flex-col min-h-screen bg-studio-dark text-white selection:bg-studio-accent selection:text-white relative">
+              {/* 3D Atmospheric Background */}
+              <Atmosphere3D />
+
               {/* Header Navigation */}
               <Navbar />
               

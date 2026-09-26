@@ -1,188 +1,183 @@
-from flask import Blueprint, request
+import logging
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import RedirectResponse
 
-from app.auth import require_current_user
+from app.auth import get_current_user, get_optional_user
 from app.config import settings
-from app.database import supabase_client
-from app.flask_utils import json_response
-from app.http import HTTPException, status
+from app.database import get_songs, get_song_by_id, check_user_purchase
+from app.google_drive import get_drive_links, parse_drive_id
 
-songs_bp = Blueprint("songs", __name__)
+logger = logging.getLogger(__name__)
 
-MOCK_SONG = {
-    "id": "mock-song-1",
-    "title": "Mu Odia Toka",
-    "artist": "Music City Singer",
-    "description": "Super Hit Odia Single",
-    "cover_url": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500",
-    "preview_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    "price": 19.00,
-    "duration_seconds": 240,
-    "is_featured": True,
-    "is_published": True,
-    "genres": {"name": "Odia Pop"},
-}
+router = APIRouter()
 
 
-def is_mock_mode() -> bool:
-    return "placeholder" in settings.supabase_service_role_key
-
-
-def mock_song_or_404(song_id: str) -> dict:
-    if song_id == MOCK_SONG["id"]:
-        return dict(MOCK_SONG)
-    raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
-
-
-def format_song_record(song: dict) -> dict:
-    if song.get("preview_storage_path") and not song["preview_storage_path"].startswith("http"):
-        try:
-            song["preview_url"] = supabase_client.storage.from_("song-previews").get_public_url(song["preview_storage_path"])
-        except Exception:
-            song["preview_url"] = f"{settings.supabase_url}/storage/v1/object/public/song-previews/{song['preview_storage_path']}"
+def format_song_record(song: Dict[str, Any]) -> Dict[str, Any]:
+    """Attach canonical streaming, preview, cover, and Google Drive links to a song record."""
+    drive_id = song.get("drive_file_id") or parse_drive_id(song.get("full_storage_path")) or parse_drive_id(song.get("preview_storage_path"))
+    
+    if drive_id:
+        song["drive_file_id"] = drive_id
+        drive_links = get_drive_links(drive_id)
+        if not song.get("drive_web_link"):
+            song["drive_web_link"] = drive_links["drive_web_link"]
+        if not song.get("drive_download_link"):
+            song["drive_download_link"] = drive_links["drive_download_link"]
+        song["drive_stream_url"] = drive_links["drive_stream_url"]
     else:
-        song["preview_url"] = song.get("preview_storage_path")
+        # Default to configured folder link
+        song["drive_web_link"] = song.get("drive_web_link") or f"https://drive.google.com/drive/folders/{settings.google_drive_folder_id}"
+        song["drive_stream_url"] = song.get("full_storage_path") or song.get("preview_storage_path")
 
-    if song.get("cover_image_url") and not song["cover_image_url"].startswith("http"):
-        try:
-            song["cover_url"] = supabase_client.storage.from_("song-covers").get_public_url(song["cover_image_url"])
-        except Exception:
-            song["cover_url"] = f"{settings.supabase_url}/storage/v1/object/public/song-covers/{song['cover_image_url']}"
+    # Cover URL resolution
+    cover = song.get("cover_image_url")
+    if cover:
+        if cover.startswith("http") or cover.startswith("/"):
+            song["cover_url"] = cover
+        else:
+            song["cover_url"] = f"{settings.supabase_url}/storage/v1/object/public/song-covers/{cover}"
     else:
-        song["cover_url"] = song.get("cover_image_url")
+        song["cover_url"] = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500"
+
+    # Preview URL resolution
+    preview = song.get("preview_storage_path")
+    if preview:
+        if preview.startswith("http") or preview.startswith("/"):
+            song["preview_url"] = preview
+        else:
+            song["preview_url"] = f"{settings.supabase_url}/storage/v1/object/public/song-previews/{preview}"
+    elif drive_id:
+        song["preview_url"] = f"https://docs.google.com/uc?export=open&id={drive_id}"
+    else:
+        song["preview_url"] = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+
+    # Format genres object for frontend compatibility
+    if "genre_name" in song and song["genre_name"]:
+        song["genres"] = {"name": song["genre_name"]}
+
+    # Ensure price is numeric float
+    if "price" in song and song["price"] is not None:
+        song["price"] = float(song["price"])
 
     return song
 
 
-@songs_bp.route("/songs", methods=["GET"])
-def list_songs():
-    genre_id = request.args.get("genre_id")
-    search = request.args.get("search")
-
+@router.get("/songs")
+def list_public_songs(
+    genre_id: Optional[str] = Query(None),
+    search: Optional[str] = Query(None)
+):
+    """Fetch public catalog of published Odia studio songs."""
     try:
-        from app.database import get_songs
-        songs = get_songs(genre_id=genre_id)
+        songs = get_songs(genre_id=genre_id, is_published=True)
 
         if search:
-            search_lower = search.lower()
+            q = search.lower().strip()
             songs = [
-                song for song in songs
-                if search_lower in song.get("title", "").lower() or search_lower in song.get("artist", "").lower()
+                s for s in songs
+                if q in (s.get("title") or "").lower()
+                or q in (s.get("artist") or "").lower()
+                or q in (s.get("album") or "").lower()
+                or q in (s.get("description") or "").lower()
             ]
 
-        for song in songs:
-            # Map genre_name back to the expected structure for frontend compatibility
-            if "genre_name" in song:
-                song["genres"] = {"name": song["genre_name"]}
-            format_song_record(song)
-
-        return json_response(songs)
+        return [format_song_record(s) for s in songs]
     except Exception as e:
-        if is_mock_mode():
-            return json_response([dict(MOCK_SONG)])
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error: {str(e)}")
+        logger.error(f"Error fetching songs: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error loading songs: {str(e)}"
+        )
 
 
-@songs_bp.route("/songs/<id>", methods=["GET"])
-def get_song(id: str):
+@router.get("/songs/{id}")
+def get_song_detail(id: str):
+    """Retrieve full details of a specific song, including lyrics, album, and Drive information."""
     try:
-        from app.database import get_song_by_id
         song = get_song_by_id(id)
         if not song:
-            if is_mock_mode():
-                return json_response(mock_song_or_404(id))
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
-
-        if "genre_name" in song:
-            song["genres"] = {"name": song["genre_name"]}
-        format_song_record(song)
-        return json_response(song)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Song not found in studio catalog"
+            )
+        return format_song_record(song)
     except HTTPException:
         raise
     except Exception as e:
-        if is_mock_mode():
-            return json_response(mock_song_or_404(id))
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
+        logger.error(f"Error loading song {id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load song details: {str(e)}"
+        )
 
 
-@songs_bp.route("/songs/<id>/download", methods=["GET"])
-@require_current_user
-def download_song(current_user: dict, id: str):
+@router.get("/songs/{id}/stream")
+def stream_song(
+    id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """Get high-fidelity stream URL for a song. Checks ownership or admin rights."""
     user_id = current_user["id"]
     is_admin = current_user.get("is_admin", False)
 
-    if not is_admin:
-        try:
-            from app.database import check_user_purchase
-            if not check_user_purchase(user_id, id):
-                raise HTTPException(status.HTTP_403_FORBIDDEN, "You must purchase this song to download it.")
-        except HTTPException:
-            raise
-        except Exception as e:
-            if "placeholder" in settings.supabase_service_role_key:
-                raise HTTPException(status.HTTP_403_FORBIDDEN, "Mock Gate: Purchase check failed for placeholder config.")
-            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error checking purchase: {str(e)}")
+    song = get_song_by_id(id)
+    if not song:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
 
-    try:
-        from app.database import get_song_by_id
-        song = get_song_by_id(id)
-        if not song:
-            if is_mock_mode():
-                return json_response({"download_url": MOCK_SONG["preview_url"]})
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
+    # If song is free (price = 0) or user is admin or user purchased the song:
+    price = float(song.get("price") or 0.0)
+    if price > 0 and not is_admin:
+        if not check_user_purchase(user_id, id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You must purchase this song to stream the full studio master track."
+            )
 
-        full_path = song["full_storage_path"]
-        if not full_path:
-             raise HTTPException(status.HTTP_404_NOT_FOUND, "Full track not available for this song")
-             
-        if full_path.startswith("http"):
-            return json_response({"download_url": full_path})
+    drive_id = song.get("drive_file_id") or parse_drive_id(song.get("full_storage_path"))
+    if drive_id:
+        stream_url = f"https://docs.google.com/uc?export=open&id={drive_id}"
+    elif song.get("full_storage_path"):
+        stream_url = song["full_storage_path"]
+    else:
+        stream_url = song.get("preview_storage_path") or "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
-        res = supabase_client.storage.from_("song-full").create_signed_url(full_path, 300)
-        signed_url = res.get("signedURL") or res.get("url")
-        return json_response({"download_url": signed_url})
-    except Exception as e:
-        if is_mock_mode():
-            return json_response({"download_url": MOCK_SONG["preview_url"]})
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Error generating signed URL: {str(e)}")
+    return {"stream_url": stream_url}
 
 
-@songs_bp.route("/songs/<id>/stream", methods=["GET"])
-@require_current_user
-def stream_song(current_user: dict, id: str):
+@router.get("/songs/{id}/download")
+def download_song(
+    id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """Get direct high-speed download link for a full master audio track."""
     user_id = current_user["id"]
     is_admin = current_user.get("is_admin", False)
 
-    if not is_admin:
-        try:
-            from app.database import check_user_purchase
-            if not check_user_purchase(user_id, id):
-                raise HTTPException(status.HTTP_403_FORBIDDEN, "You must purchase this song to stream it.")
-        except HTTPException:
-            raise
-        except Exception as e:
-            if "placeholder" in settings.supabase_service_role_key:
-                raise HTTPException(status.HTTP_403_FORBIDDEN, "Mock Gate: Purchase check failed for placeholder config.")
-            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error checking purchase: {str(e)}")
+    song = get_song_by_id(id)
+    if not song:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Song not found")
 
-    try:
-        from app.database import get_song_by_id
-        song = get_song_by_id(id)
-        if not song:
-            if is_mock_mode():
-                return json_response({"stream_url": MOCK_SONG["preview_url"]})
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Song not found")
+    price = float(song.get("price") or 0.0)
+    if price > 0 and not is_admin:
+        if not check_user_purchase(user_id, id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You must purchase this song to download the full master track."
+            )
 
-        full_path = song["full_storage_path"]
-        if not full_path:
-             raise HTTPException(status.HTTP_404_NOT_FOUND, "Full track not available for this song")
+    drive_id = song.get("drive_file_id") or parse_drive_id(song.get("full_storage_path"))
+    if drive_id:
+        download_url = f"https://drive.google.com/uc?export=download&id={drive_id}"
+    elif song.get("drive_download_link"):
+        download_url = song["drive_download_link"]
+    elif song.get("full_storage_path"):
+        download_url = song["full_storage_path"]
+    else:
+        download_url = song.get("preview_storage_path") or "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
-        if full_path.startswith("http"):
-            return json_response({"stream_url": full_path})
-
-        res = supabase_client.storage.from_("song-full").create_signed_url(full_path, 300)
-        signed_url = res.get("signedURL") or res.get("url")
-        return json_response({"stream_url": signed_url})
-    except Exception as e:
-        if is_mock_mode():
-            return json_response({"stream_url": MOCK_SONG["preview_url"]})
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Error generating signed URL: {str(e)}")
+    return {
+        "download_url": download_url,
+        "title": song.get("title"),
+        "artist": song.get("artist")
+    }

@@ -1,67 +1,808 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  /* Studio color palette */
-  --color-studio-dark: #0B0B0E;
-  --color-studio-card: #14151B;
+  /* === STUDIO BRAND COLOR SYSTEM === */
+  --color-studio-dark: #04040A;
+  --color-studio-dark-2: #07070F;
+  --color-studio-card: #0D0E1A;
+  --color-studio-card-elevated: #131422;
   --color-studio-accent: #F97316;
-  --color-studio-gold: #D97706;
-  --color-studio-muted: #8E909B;
-  --color-studio-border: #22242E;
+  --color-studio-accent-glow: rgba(249, 115, 22, 0.5);
+  --color-studio-gold: #EAB308;
+  --color-studio-gold-glow: rgba(234, 179, 8, 0.4);
+  --color-studio-pink: #EC4899;
+  --color-studio-cyan: #06B6D4;
+  --color-studio-muted: #7E8099;
+  --color-studio-border: #1A1C2E;
+  --color-studio-border-light: rgba(255, 255, 255, 0.07);
 
-  /* Equalizer keyframe animations */
-  --animate-equalizer-1: equalizer 1s ease-in-out infinite alternate;
-  --animate-equalizer-2: equalizer 0.8s ease-in-out infinite alternate 0.2s;
-  --animate-equalizer-3: equalizer 1.2s ease-in-out infinite alternate 0.4s;
-  --animate-equalizer-4: equalizer 0.9s ease-in-out infinite alternate 0.1s;
+  /* === ANIMATION REGISTRY === */
+  --animate-equalizer-1: equalizer 0.9s ease-in-out infinite alternate;
+  --animate-equalizer-2: equalizer 0.7s ease-in-out infinite alternate 0.15s;
+  --animate-equalizer-3: equalizer 1.1s ease-in-out infinite alternate 0.3s;
+  --animate-equalizer-4: equalizer 0.85s ease-in-out infinite alternate 0.08s;
+  --animate-spin-slow: spin 20s linear infinite;
+  --animate-spin-medium: spin 8s linear infinite;
+  --animate-float-slow: floatSlow 6s ease-in-out infinite;
+  --animate-float-reverse: floatReverse 7s ease-in-out infinite;
+  --animate-float-3d: float3D 5s ease-in-out infinite;
+  --animate-pulse-glow: pulseGlow 3s ease-in-out infinite;
+  --animate-pulse-slow: pulseSlow 4s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.5s ease-in-out infinite;
+  --animate-orbit: orbit 12s linear infinite;
+  --animate-laser: laser 3s ease-in-out infinite alternate;
+  --animate-neon-flicker: neonFlicker 4s ease-in-out infinite;
+  --animate-glow-rotate: glowRotate 6s linear infinite;
+  --animate-depth-bob: depthBob 4s ease-in-out infinite;
 
   @keyframes equalizer {
-    0% { transform: scaleY(0.15); }
+    0% { transform: scaleY(0.12); }
     100% { transform: scaleY(1); }
+  }
+  @keyframes floatSlow {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(1.5deg); }
+  }
+  @keyframes floatReverse {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(14px) rotate(-1.5deg); }
+  }
+  @keyframes float3D {
+    0%, 100% { transform: translateY(0px) translateZ(0px) rotateX(0deg); }
+    33% { transform: translateY(-8px) translateZ(15px) rotateX(2deg); }
+    66% { transform: translateY(4px) translateZ(5px) rotateX(-1deg); }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.08); }
+  }
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%) skewX(-15deg); }
+    100% { transform: translateX(200%) skewX(-15deg); }
+  }
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+  }
+  @keyframes laser {
+    0% { opacity: 0.2; transform: scaleX(0.8); }
+    100% { opacity: 0.8; transform: scaleX(1.2); }
+  }
+  @keyframes neonFlicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.6; }
+    97% { opacity: 1; }
+    98% { opacity: 0.4; }
+    99% { opacity: 1; }
+  }
+  @keyframes glowRotate {
+    from { filter: hue-rotate(0deg) brightness(1); }
+    to { filter: hue-rotate(30deg) brightness(1.2); }
+  }
+  @keyframes depthBob {
+    0%, 100% { transform: translateZ(0px) rotateX(0deg) rotateY(0deg); }
+    25% { transform: translateZ(20px) rotateX(2deg) rotateY(-1deg); }
+    75% { transform: translateZ(10px) rotateX(-1deg) rotateY(2deg); }
+  }
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+  @keyframes ripple3D {
+    0% { transform: scale(0) translateZ(0); opacity: 1; }
+    100% { transform: scale(4) translateZ(60px); opacity: 0; }
+  }
+  @keyframes logoGlow {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.4)) drop-shadow(0 0 20px rgba(234, 179, 8, 0.2)); }
+    50% { filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.7)) drop-shadow(0 0 35px rgba(234, 179, 8, 0.4)); }
+  }
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0px) scale(1) rotateY(0deg); }
+    50% { transform: translateY(-6px) scale(1.02) rotateY(3deg); }
+  }
+  @keyframes hyperDrift {
+    0% { transform: perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0px); }
+    25% { transform: perspective(800px) rotateX(3deg) rotateY(2deg) translateZ(20px); }
+    50% { transform: perspective(800px) rotateX(-2deg) rotateY(-3deg) translateZ(10px); }
+    75% { transform: perspective(800px) rotateX(1deg) rotateY(4deg) translateZ(30px); }
+    100% { transform: perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0px); }
   }
 }
 
+/* ===================================================
+   GLOBAL BASE SYSTEM
+   =================================================== */
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     margin: 0;
-    background-color: #0B0B0E;
+    background-color: #04040A;
     color: #F3F4F6;
     font-family: 'Outfit', 'Noto Sans Oriya', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Deep cinematic galaxy background */
+    background-image: 
+      radial-gradient(ellipse at 15% 15%, rgba(249, 115, 22, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 20%, rgba(234, 179, 8, 0.07) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 90%, rgba(236, 72, 153, 0.04) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 60%);
+    background-attachment: fixed;
   }
 }
 
-/* Custom premium scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0B0B0E;
-}
-
+/* ===================================================
+   PREMIUM SCROLLBARS
+   =================================================== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #04040A; }
 ::-webkit-scrollbar-thumb {
-  background: #22242E;
+  background: linear-gradient(to bottom, #F97316, #EAB308);
   border-radius: 9999px;
 }
+::-webkit-scrollbar-thumb:hover { background: #F97316; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #F97316;
-}
+/* ===================================================
+   3D PERSPECTIVE ENGINE
+   =================================================== */
+.perspective-500 { perspective: 500px; }
+.perspective-800 { perspective: 800px; }
+.perspective-1000 { perspective: 1000px; }
+.perspective-1500 { perspective: 1500px; }
+.perspective-2000 { perspective: 2000px; }
+.perspective-3000 { perspective: 3000px; }
 
-/* Glassmorphism utility */
+.preserve-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; }
+
+/* Z-Depth Layers — objects float on Z-axis in 3D space */
+.depth-1 { transform: translateZ(8px); }
+.depth-2 { transform: translateZ(18px); }
+.depth-3 { transform: translateZ(32px); }
+.depth-4 { transform: translateZ(52px); }
+.depth-5 { transform: translateZ(80px); }
+.depth-6 { transform: translateZ(120px); }
+
+/* ===================================================
+   GLASSMORPHISM SYSTEM — Multi-level depth glass
+   =================================================== */
+
+/* Base glass — frosted panel */
 .glass {
-  background: rgba(20, 21, 27, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(13, 14, 26, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  box-shadow: 
+    0 12px 40px -10px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 }
 
-/* Equalizer bar helper */
+/* 3D glass panel with edge lighting */
+.glass-3d {
+  background: linear-gradient(145deg,
+    rgba(20, 21, 35, 0.8) 0%,
+    rgba(12, 13, 22, 0.9) 60%,
+    rgba(8, 9, 16, 0.95) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 30px 60px -20px rgba(0, 0, 0, 0.95),
+    0 0 30px rgba(249, 115, 22, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.18),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.5),
+    inset 1px 0 1px rgba(255, 255, 255, 0.06),
+    inset -1px 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* Deep volumetric glass — for hero panels */
+.glass-deep {
+  background: linear-gradient(160deg,
+    rgba(25, 27, 45, 0.85) 0%,
+    rgba(13, 14, 26, 0.9) 50%,
+    rgba(7, 8, 15, 0.95) 100%);
+  backdrop-filter: blur(32px) saturate(1.5);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  border: 1px solid rgba(249, 115, 22, 0.12);
+  box-shadow:
+    0 40px 80px -25px rgba(0, 0, 0, 1),
+    0 0 60px rgba(249, 115, 22, 0.06),
+    0 0 120px rgba(234, 179, 8, 0.03),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Cinematic projection screen glass */
+.glass-cinema {
+  background: linear-gradient(135deg,
+    rgba(8, 9, 20, 0.92) 0%,
+    rgba(15, 16, 30, 0.88) 100%);
+  backdrop-filter: blur(28px) brightness(0.95);
+  -webkit-backdrop-filter: blur(28px) brightness(0.95);
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(249,115,22,0.3), transparent 40%, rgba(234,179,8,0.2)) 1;
+  box-shadow:
+    0 25px 50px -15px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 0 40px rgba(249, 115, 22, 0.03);
+}
+
+/* ===================================================
+   3D CARD SYSTEM
+   =================================================== */
+.card-depth-3d {
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.card-depth-3d:hover {
+  transform: translateY(-10px) rotateX(5deg) rotateY(-2deg);
+  box-shadow: 
+    0 35px 70px -15px rgba(0, 0, 0, 0.9),
+    0 0 40px rgba(249, 115, 22, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* Extruded 3D card with bottom extrusion slab */
+.card-extruded {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.card-extruded::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform: translateZ(-20px) translateY(20px) scaleX(0.95);
+  background: rgba(249, 115, 22, 0.12);
+  filter: blur(12px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.card-extruded:hover::after {
+  transform: translateZ(-30px) translateY(30px) scaleX(0.9);
+  filter: blur(18px);
+  background: rgba(249, 115, 22, 0.2);
+}
+
+/* ===================================================
+   3D TACTILE BUTTON SYSTEM
+   =================================================== */
+
+/* Primary Orange 3D Push Button */
+.btn-3d {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 0.75rem;
+  color: white;
+  box-shadow: 
+    0 5px 0 0 #B45309,
+    0 8px 20px -3px rgba(249, 115, 22, 0.45),
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+.btn-3d:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 8px 0 0 #B45309,
+    0 14px 28px -3px rgba(249, 115, 22, 0.55),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.btn-3d:active {
+  transform: translateY(4px) scale(0.99);
+  box-shadow: 
+    0 1px 0 0 #B45309,
+    0 3px 8px -2px rgba(249, 115, 22, 0.3),
+    inset 0 1px 0 rgba(0,0,0,0.2);
+}
+
+/* Secondary Dark 3D Push Button */
+.btn-3d-secondary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, #1A1C2E, #111220);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 
+    0 5px 0 0 #080910,
+    0 8px 20px -5px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+}
+.btn-3d-secondary:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 
+    0 8px 0 0 #080910,
+    0 14px 28px -5px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(249, 115, 22, 0.1),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.btn-3d-secondary:active {
+  transform: translateY(4px) scale(0.99);
+  box-shadow: 0 1px 0 0 #080910, 0 3px 8px -2px rgba(0,0,0,0.5);
+}
+
+/* Emerald 3D Push Button */
+.btn-3d-emerald {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, #10B981, #059669);
+  box-shadow: 
+    0 5px 0 0 #047857,
+    0 8px 20px -3px rgba(16, 185, 129, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+.btn-3d-emerald:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(145deg, #34D399, #10B981);
+  box-shadow: 
+    0 8px 0 0 #047857,
+    0 14px 28px -3px rgba(16, 185, 129, 0.5);
+}
+.btn-3d-emerald:active {
+  transform: translateY(4px) scale(0.99);
+  box-shadow: 0 1px 0 0 #047857, 0 3px 8px -2px rgba(16, 185, 129, 0.3);
+}
+
+/* Red YouTube Button */
+.btn-3d-red {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, #EF4444, #DC2626);
+  box-shadow: 
+    0 5px 0 0 #991B1B,
+    0 8px 20px -3px rgba(239, 68, 68, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-3d-red:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 0 0 #991B1B, 0 14px 28px -3px rgba(239,68,68,0.5);
+}
+.btn-3d-red:active {
+  transform: translateY(4px) scale(0.99);
+  box-shadow: 0 1px 0 0 #991B1B;
+}
+
+/* ===================================================
+   NEON GLOW BORDERS
+   =================================================== */
+
+/* Orange/Gold neon rim */
+.glow-border-accent {
+  position: relative;
+}
+.glow-border-accent::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(249, 115, 22, 0.7) 0%,
+    transparent 40%,
+    rgba(234, 179, 8, 0.5) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: neonFlicker 6s ease-in-out infinite;
+}
+
+/* Emerald neon rim */
+.glow-border-emerald {
+  position: relative;
+}
+.glow-border-emerald::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.7) 0%,
+    transparent 50%,
+    rgba(52, 211, 153, 0.4) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Pink neon rim */
+.glow-border-pink {
+  position: relative;
+}
+.glow-border-pink::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(236, 72, 153, 0.7) 0%,
+    transparent 50%,
+    rgba(249, 115, 22, 0.4) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ===================================================
+   REALISTIC VINYL RECORD SYSTEM
+   =================================================== */
+.vinyl-disc {
+  background: 
+    radial-gradient(circle at center,
+      #0a0a0a 0%,
+      #050505 20%,
+      #1a1a1a 21%,
+      #080808 28%,
+      #181818 33%,
+      #050505 38%,
+      #151515 43%,
+      #080808 52%,
+      #191919 62%,
+      #050505 72%,
+      #151515 82%,
+      #000 100%
+    );
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 20px 50px -8px rgba(0, 0, 0, 0.98),
+    0 8px 20px rgba(0, 0, 0, 0.8),
+    inset 0 0 20px rgba(0, 0, 0, 0.95);
+}
+
+.vinyl-sheen {
+  background: conic-gradient(
+    from 45deg at 40% 40%,
+    rgba(255, 255, 255, 0.15) 0deg,
+    transparent 50deg,
+    rgba(255, 255, 255, 0.08) 120deg,
+    transparent 180deg,
+    rgba(255, 255, 255, 0.12) 240deg,
+    transparent 300deg,
+    rgba(255, 255, 255, 0.15) 360deg
+  );
+}
+
+/* ===================================================
+   3D FLOATING AUDIO PLAYER DOCK
+   =================================================== */
+.floating-dock-3d {
+  background: linear-gradient(180deg,
+    rgba(18, 19, 32, 0.92) 0%,
+    rgba(9, 10, 18, 0.97) 100%);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 -8px 0 0 rgba(249, 115, 22, 0.15),
+    0 30px 80px -20px rgba(0, 0, 0, 0.98),
+    0 0 50px rgba(249, 115, 22, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.7);
+}
+
+/* ===================================================
+   CINEMATIC LIGHTING EFFECTS
+   =================================================== */
+
+/* Spotlight cone from top */
+.spotlight-cone {
+  background: radial-gradient(ellipse at 50% 0%,
+    rgba(249, 115, 22, 0.2) 0%,
+    rgba(249, 115, 22, 0.05) 40%,
+    transparent 70%);
+  pointer-events: none;
+}
+
+/* Scan line overlay for CRT/cinematic effect */
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Chromatic aberration for 3D depth effect */
+.chromatic-edge {
+  position: relative;
+}
+.chromatic-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg,
+    rgba(236, 72, 153, 0.04) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(6, 182, 212, 0.04) 100%);
+  pointer-events: none;
+}
+
+/* ===================================================
+   LOGO SYSTEM
+   =================================================== */
+.logo-img {
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 12px rgba(249, 115, 22, 0.35))
+          drop-shadow(0 0 25px rgba(234, 179, 8, 0.2));
+  animation: logoGlow 3s ease-in-out infinite, logoFloat 5s ease-in-out infinite;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.logo-img:hover {
+  filter: drop-shadow(0 6px 20px rgba(249, 115, 22, 0.6))
+          drop-shadow(0 0 40px rgba(234, 179, 8, 0.4));
+  animation-play-state: paused;
+  transform: scale(1.08) rotateY(-5deg);
+}
+
+/* Navbar logo — compact variant */
+.logo-navbar {
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 2px 8px rgba(249, 115, 22, 0.4));
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.logo-navbar:hover {
+  filter: drop-shadow(0 4px 16px rgba(249, 115, 22, 0.7)) drop-shadow(0 0 30px rgba(234, 179, 8, 0.3));
+  transform: scale(1.06) rotate(-2deg);
+}
+
+/* ===================================================
+   PERSPECTIVE HORIZON GRID
+   =================================================== */
+.audio-grid-perspective {
+  background-image: 
+    linear-gradient(to right, rgba(249, 115, 22, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(249, 115, 22, 0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: perspective(500px) rotateX(65deg);
+  transform-origin: top center;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+  animation: laser 4s ease-in-out infinite alternate;
+}
+
+/* ===================================================
+   SHIMMER / GLARE EFFECT
+   =================================================== */
+.shimmer-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  animation: shimmer 3s ease-in-out infinite 1s;
+  pointer-events: none;
+}
+
+/* ===================================================
+   3D EXTRUDED BADGES
+   =================================================== */
+.badge-3d {
+  box-shadow: 
+    0 3px 0 rgba(0, 0, 0, 0.5),
+    0 5px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transform: translateZ(15px);
+}
+
+/* ===================================================
+   3D EMERALD BUTTON VARIANT
+   =================================================== */
+.btn-3d-emerald {
+  box-shadow:
+    0 4px 0 0 #047857,
+    0 8px 16px -2px rgba(16, 185, 129, 0.35);
+}
+
+/* ===================================================
+   PARALLAX SCROLLING HELPERS
+   =================================================== */
+.parallax-slow { transform: translateZ(-1px) scale(1.5); }
+.parallax-medium { transform: translateZ(-0.5px) scale(1.25); }
+.parallax-fast { transform: translateZ(0px) scale(1); }
+
+/* ===================================================
+   EQUALIZER BARS
+   =================================================== */
 .equalizer-bar {
   transform-origin: bottom;
+}
+
+/* ===================================================
+   SPATIAL INSET SHADOW (DEPTH SOCKET)
+   =================================================== */
+.inset-3d {
+  box-shadow:
+    inset 0 4px 12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 3px rgba(0, 0, 0, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ===================================================
+   HOLOGRAPHIC IRIDESCENT EFFECT
+   =================================================== */
+.holographic {
+  background: linear-gradient(
+    135deg,
+    rgba(249, 115, 22, 0.15) 0%,
+    rgba(234, 179, 8, 0.1) 25%,
+    rgba(16, 185, 129, 0.1) 50%,
+    rgba(6, 182, 212, 0.1) 75%,
+    rgba(236, 72, 153, 0.1) 100%
+  );
+  animation: glowRotate 6s linear infinite;
+}
+
+/* ===================================================
+   TEXT EFFECTS
+   =================================================== */
+.text-gradient-fire {
+  background: linear-gradient(135deg, #F97316 0%, #FBBF24 50%, #EAB308 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text-gradient-studio {
+  background: linear-gradient(135deg, #F97316 0%, #EC4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text-glow-accent {
+  text-shadow: 0 0 20px rgba(249, 115, 22, 0.6), 0 0 40px rgba(249, 115, 22, 0.3);
+}
+.text-glow-gold {
+  text-shadow: 0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3);
+}
+
+/* ===================================================
+   3D ENVIRONMENT LAYERS
+   =================================================== */
+.world-stage {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  perspective-origin: 50% 30%;
+}
+
+.env-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to top, rgba(249,115,22,0.04), transparent);
+  transform: perspective(600px) rotateX(70deg);
+  transform-origin: bottom center;
+  pointer-events: none;
+}
+
+/* ===================================================
+   RIPPLE CLICK EFFECT
+   =================================================== */
+.ripple-3d {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-3d::after {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.3);
+  transform: scale(0) translateZ(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.ripple-3d:active::after {
+  animation: ripple3D 0.5s ease-out;
+}
+
+/* ===================================================
+   NAVBAR 3D GLASSMORPHISM SYSTEM
+   =================================================== */
+.navbar-glass {
+  background: linear-gradient(180deg,
+    rgba(7, 7, 18, 0.95) 0%,
+    rgba(4, 4, 12, 0.9) 100%);
+  backdrop-filter: blur(28px) saturate(2);
+  -webkit-backdrop-filter: blur(28px) saturate(2);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.05),
+    0 8px 32px -8px rgba(0,0,0,0.8),
+    0 0 60px rgba(249, 115, 22, 0.04);
+}
+
+/* ===================================================
+   LOADING PULSE
+   =================================================== */
+.loading-ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.loading-ring::before, .loading-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: spin 1.2s linear infinite;
+}
+.loading-ring::before {
+  border-top-color: #F97316;
+  border-right-color: rgba(249,115,22,0.3);
+}
+.loading-ring::after {
+  border-bottom-color: #EAB308;
+  border-left-color: rgba(234,179,8,0.3);
+  animation-direction: reverse;
+  animation-duration: 0.8s;
+}
+
+/* ===================================================
+   RESPONSIVE SPATIAL UTILITIES
+   =================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,24 +1,22 @@
-from flask import Blueprint
+import logging
+from typing import List, Dict, Any
+from fastapi import APIRouter, HTTPException, status
 
-from app.config import settings
-from app.flask_utils import json_response
-from app.http import HTTPException, status
+from app.database import get_genres
 
-genres_bp = Blueprint("genres", __name__)
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
 
 
-@genres_bp.route("/genres", methods=["GET"])
+@router.get("/genres")
 def list_genres():
+    """Retrieve all Odia studio song categories and genres."""
     try:
-        from app.database import get_genres
-        genres = get_genres()
-        return json_response(genres)
+        return get_genres()
     except Exception as e:
-        if "placeholder" in settings.supabase_service_role_key:
-            return json_response([
-                {"id": "genre-1", "name": "Odia Pop"},
-                {"id": "genre-2", "name": "Sambalpuri Folk"},
-                {"id": "genre-3", "name": "Bhajan"},
-                {"id": "genre-4", "name": "Romantic"},
-            ])
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error: {str(e)}")
+        logger.error(f"Error loading genres: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error loading genres: {str(e)}"
+        )

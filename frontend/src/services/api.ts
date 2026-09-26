@@ -1,6 +1,42 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://music-city-odia.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 3000): Promise<Response> {
+export interface SongRecord {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+  genre_id?: string;
+  description?: string;
+  lyrics?: string;
+  cover_url?: string;
+  cover_image_url?: string;
+  preview_url: string;
+  preview_storage_path?: string;
+  full_storage_path?: string;
+  drive_file_id?: string;
+  drive_web_link?: string;
+  drive_download_link?: string;
+  drive_stream_url?: string;
+  price: number;
+  duration_seconds?: number;
+  is_featured?: boolean;
+  is_published?: boolean;
+  genres?: { name: string };
+  created_at?: string;
+}
+
+export interface DriveStatus {
+  configured: boolean;
+  folder_id: string;
+  folder_url: string;
+  auth_method: string;
+  storage_mode: string;
+  folder_name?: string;
+  folder_accessible?: boolean;
+  folder_error?: string;
+}
+
+export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 2000): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
     try {
       const response = await fetch(url, {
@@ -49,6 +85,24 @@ export const api = {
 
       return res.json();
     },
+
+    login: async (payload: { email: string; password: string }) => {
+      const res = await fetchWithRetry(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.message || 'Invalid email or password');
+      }
+
+      return res.json();
+    },
+
     updateProfile: async (payload: { full_name: string; phone: string }) => {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/auth/profile`, {
@@ -67,7 +121,7 @@ export const api = {
   },
 
   songs: {
-    list: async (genreId?: string, search?: string) => {
+    list: async (genreId?: string, search?: string): Promise<SongRecord[]> => {
       let url = `${API_BASE_URL}/songs`;
       const params = new URLSearchParams();
       if (genreId) params.append('genre_id', genreId);
@@ -81,7 +135,7 @@ export const api = {
       return res.json();
     },
     
-    get: async (id: string) => {
+    get: async (id: string): Promise<SongRecord> => {
       const res = await fetchWithRetry(`${API_BASE_URL}/songs/${id}`);
       if (!res.ok) throw new Error('Failed to load song details');
       return res.json();
@@ -149,7 +203,7 @@ export const api = {
       return res.json();
     },
     
-    listPurchases: async () => {
+    listPurchases: async (): Promise<SongRecord[]> => {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/me/purchases`, { headers });
       if (!res.ok) throw new Error('Failed to load purchases library');
@@ -158,7 +212,7 @@ export const api = {
   },
   
   admin: {
-    listSongs: async () => {
+    listSongs: async (): Promise<SongRecord[]> => {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/admin/songs`, { headers });
       if (!res.ok) throw new Error('Failed to load admin song inventory');
@@ -211,6 +265,13 @@ export const api = {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/admin/stats`, { headers });
       if (!res.ok) throw new Error('Failed to load admin metrics');
+      return res.json();
+    },
+
+    getDriveStatus: async (): Promise<DriveStatus> => {
+      const headers = await getHeaders();
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/drive/status`, { headers });
+      if (!res.ok) throw new Error('Failed to load Google Drive status');
       return res.json();
     }
   },

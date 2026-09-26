@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Music, Mail, Lock, UserPlus, Phone, User, AlertCircle } from 'lucide-react';
+import { Mail, Lock, UserPlus, Phone, User, AlertCircle, Disc3, Eye, EyeOff } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export const Signup: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -10,6 +11,8 @@ export const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,16 +54,21 @@ export const Signup: React.FC = () => {
 
       <div className="max-w-md w-full space-y-8 glass border border-studio-border p-6 sm:p-10 rounded-2xl relative z-10 text-left">
         
-        {/* Branding */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 bg-studio-accent rounded-xl flex items-center justify-center">
-            <Music className="w-6 h-6 text-white" />
+        {/* Official Logo Branding */}
+        <div className="text-center space-y-3 mb-2">
+          <div
+            className="mx-auto w-20 h-20 rounded-full overflow-hidden border-2 border-studio-accent/40"
+            style={{ boxShadow: '0 0 0 4px rgba(249,115,22,0.15), 0 8px 32px rgba(249,115,22,0.25)' }}
+          >
+            <img src={logoImg} alt="Music City Odia" className="w-full h-full object-cover logo-img" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Create Account</h2>
-          <p className="text-xs text-studio-muted uppercase tracking-wider font-semibold">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Create <span className="text-gradient-fire">Account</span></h2>
+          <p className="text-xs text-studio-muted uppercase tracking-widest font-bold flex items-center justify-center gap-2">
+            <Disc3 className="w-3 h-3 text-studio-accent" />
             Super Bass Sound Studio
           </p>
         </div>
+
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg flex items-start space-x-2 text-sm">
@@ -123,13 +131,21 @@ export const Signup: React.FC = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-studio-card border border-studio-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-studio-accent/50"
+                    className="w-full bg-studio-card border border-studio-border rounded-lg pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-studio-accent/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none p-1"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -138,13 +154,21 @@ export const Signup: React.FC = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-studio-card border border-studio-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-studio-accent/50"
+                    className="w-full bg-studio-card border border-studio-border rounded-lg pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-studio-accent/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none p-1"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
             </div>

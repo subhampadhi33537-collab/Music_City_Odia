@@ -1,34 +1,140 @@
-# Environment files
+# ==============================================================================
+# Music City Odia — Comprehensive Git Ignore Rules
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Sensitive Credentials
+# ------------------------------------------------------------------------------
 .env
 .env.*
+*.env
+!.env.example
 backend/.env
+backend/.env.*
+backend/!.env.example
 frontend/.env
+frontend/.env.*
+frontend/!.env.example
+frontend/.env*.local
 
-# Python
+# Secret keys, credentials & Google Service Accounts
+service_account.json
+backend/service_account.json
+*credentials*.json
+*.pem
+*.key
+*.cert
+
+# ------------------------------------------------------------------------------
+# 2. Python & Virtual Environments
+# ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+backend/venv/
+backend/.venv/
+
+# Distribution / Packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing, Linters & Coverage
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.venv/
-venv/
-backend/venv/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+.tox/
+.nox/
 
-# Node / frontend
+# ------------------------------------------------------------------------------
+# 3. Local Databases & SQLite Files
+# ------------------------------------------------------------------------------
+backend/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ------------------------------------------------------------------------------
+# 4. Uploaded Audio & Media Files (Keep folder structure via .gitkeep)
+# ------------------------------------------------------------------------------
+backend/static/audio/*
+!backend/static/audio/.gitkeep
+backend/static/covers/*
+!backend/static/covers/.gitkeep
+
+# ------------------------------------------------------------------------------
+# 5. Node.js & Frontend Artifacts
+# ------------------------------------------------------------------------------
 node_modules/
 frontend/node_modules/
 dist/
 frontend/dist/
-build/
+dist-ssr/
+frontend/dist-ssr/
+.vite/
+frontend/.vite/
+*.local
 
-# Logs
+# ------------------------------------------------------------------------------
+# 6. Logs & Debugging
+# ------------------------------------------------------------------------------
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# OS / editor
+# ------------------------------------------------------------------------------
+# 7. Operating System & IDE Files
+# ------------------------------------------------------------------------------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs
 .idea/
 .vscode/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
