@@ -9,11 +9,14 @@ from app.auth import require_admin_user
 from app.config import settings
 from app.database import (
     create_song,
+    delete_booking,
     delete_song,
+    get_admin_bookings,
     get_admin_orders,
     get_admin_stats,
     get_song_by_id,
     get_songs,
+    update_booking_status,
     update_song,
 )
 from app.google_drive import (
@@ -23,7 +26,7 @@ from app.google_drive import (
     upload_audio_to_drive,
 )
 from app.routers.songs import format_song_record
-from app.schemas import SongUpdate
+from app.schemas import BookingStatusUpdate, SongUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -215,3 +218,40 @@ def list_admin_orders(admin_user: Dict[str, Any] = Depends(require_admin_user)):
 def get_admin_stats_route(admin_user: Dict[str, Any] = Depends(require_admin_user)):
     """Retrieve studio business metrics (total sales, song revenue, top sellers)."""
     return get_admin_stats()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STUDIO BOOKINGS & CONTACT INQUIRIES
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/admin/bookings")
+def list_admin_bookings(
+    status: Optional[str] = None,
+    admin_user: Dict[str, Any] = Depends(require_admin_user)
+):
+    """Retrieve all studio recording, mixing, dubbing bookings and contact inquiries."""
+    return get_admin_bookings(status_filter=status)
+
+
+@router.put("/admin/bookings/{id}/status")
+def update_admin_booking_status(
+    id: str,
+    payload: BookingStatusUpdate,
+    admin_user: Dict[str, Any] = Depends(require_admin_user)
+):
+    """Update status of a studio booking inquiry (pending, contacted, confirmed, completed, cancelled)."""
+    updated = update_booking_status(id, payload.status)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking inquiry not found")
+    return {"status": "success", "booking": updated}
+
+
+@router.delete("/admin/bookings/{id}")
+def delete_admin_booking(
+    id: str,
+    admin_user: Dict[str, Any] = Depends(require_admin_user)
+):
+    """Delete a studio booking inquiry."""
+    delete_booking(id)
+    return {"status": "success", "message": "Booking inquiry deleted successfully"}
+

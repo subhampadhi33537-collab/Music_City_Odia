@@ -1,4 +1,31 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+export const resolveAssetUrl = (url?: string): string => {
+  if (!url) return '';
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('blob:') ||
+    url.startsWith('data:')
+  ) {
+    return url;
+  }
+  const cleanBase = API_BASE_URL.replace(/\/+$/, '');
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${cleanBase}${cleanPath}`;
+};
+
+export const normalizeSongRecord = (song: any): SongRecord => {
+  return {
+    ...song,
+    id: String(song.id),
+    cover_url: resolveAssetUrl(song.cover_url || song.cover_image_url),
+    cover_image_url: resolveAssetUrl(song.cover_image_url || song.cover_url),
+    preview_url: resolveAssetUrl(song.preview_url || song.preview_storage_path),
+    preview_storage_path: resolveAssetUrl(song.preview_storage_path || song.preview_url),
+    drive_stream_url: resolveAssetUrl(song.drive_stream_url || song.full_storage_path),
+  };
+};
 
 export interface SongRecord {
   id: string;
@@ -132,13 +159,14 @@ export const api = {
       
       const res = await fetchWithRetry(url);
       if (!res.ok) throw new Error('Failed to load songs');
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data.map(normalizeSongRecord) : [];
     },
     
     get: async (id: string): Promise<SongRecord> => {
       const res = await fetchWithRetry(`${API_BASE_URL}/songs/${id}`);
       if (!res.ok) throw new Error('Failed to load song details');
-      return res.json();
+      return normalizeSongRecord(await res.json());
     },
     
     getDownloadUrl: async (id: string) => {
@@ -207,7 +235,8 @@ export const api = {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/me/purchases`, { headers });
       if (!res.ok) throw new Error('Failed to load purchases library');
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data.map(normalizeSongRecord) : [];
     }
   },
   
@@ -216,7 +245,8 @@ export const api = {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/admin/songs`, { headers });
       if (!res.ok) throw new Error('Failed to load admin song inventory');
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data.map(normalizeSongRecord) : [];
     },
 
     uploadSong: async (formData: FormData) => {
@@ -272,6 +302,38 @@ export const api = {
       const headers = await getHeaders();
       const res = await fetchWithRetry(`${API_BASE_URL}/admin/drive/status`, { headers });
       if (!res.ok) throw new Error('Failed to load Google Drive status');
+      return res.json();
+    },
+
+    listBookings: async (status?: string) => {
+      const headers = await getHeaders();
+      let url = `${API_BASE_URL}/admin/bookings`;
+      if (status && status !== 'all') {
+        url += `?status=${encodeURIComponent(status)}`;
+      }
+      const res = await fetchWithRetry(url, { headers });
+      if (!res.ok) throw new Error('Failed to load studio bookings');
+      return res.json();
+    },
+
+    updateBookingStatus: async (id: number | string, newStatus: string) => {
+      const headers = await getHeaders();
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/bookings/${id}/status`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update booking status');
+      return res.json();
+    },
+
+    deleteBooking: async (id: number | string) => {
+      const headers = await getHeaders();
+      const res = await fetchWithRetry(`${API_BASE_URL}/admin/bookings/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok) throw new Error('Failed to delete booking');
       return res.json();
     }
   },

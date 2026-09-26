@@ -30,6 +30,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminSongs } from './pages/AdminSongs';
 import { AdminNewSong } from './pages/AdminNewSong';
 import { AdminOrders } from './pages/AdminOrders';
+import { AdminBookings } from './pages/AdminBookings';
 
 function App() {
   return (
@@ -94,6 +95,11 @@ function App() {
                   <Route path="/admin/orders" element={
                     <AdminRoute>
                       <AdminOrders />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/bookings" element={
+                    <AdminRoute>
+                      <AdminBookings />
                     </AdminRoute>
                   } />
                 </Routes>

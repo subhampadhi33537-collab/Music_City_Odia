@@ -130,6 +130,10 @@ class BookingCreate(BaseModel):
     service: str
     message: str
 
+class BookingStatusUpdate(BaseModel):
+    status: str
+
+
 
 # --- Google Drive Schemas ---
 class DriveStatusResponse(BaseModel):

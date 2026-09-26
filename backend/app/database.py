@@ -249,6 +249,21 @@ def _create_tables():
         except Exception as e:
             logger.warning(f"DDL notice / warning: {e}")
 
+    # Ensure schema migrations are applied to existing tables
+    _MIGRATION_DDL = [
+        "ALTER TABLE songs ADD COLUMN IF NOT EXISTS album TEXT;",
+        "ALTER TABLE songs ADD COLUMN IF NOT EXISTS lyrics TEXT;",
+        "ALTER TABLE songs ADD COLUMN IF NOT EXISTS drive_file_id TEXT;",
+        "ALTER TABLE songs ADD COLUMN IF NOT EXISTS drive_web_link TEXT;",
+        "ALTER TABLE songs ADD COLUMN IF NOT EXISTS drive_download_link TEXT;",
+        "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';",
+    ]
+    for ddl in _MIGRATION_DDL:
+        try:
+            execute_query(ddl)
+        except Exception as e:
+            logger.warning(f"Migration DDL notice: {e}")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 3. SEED DATA (Admin, Genres, Demo Song)
@@ -272,7 +287,7 @@ def _seed_data():
 
     # 2. Admin User
     admin_email = "musiccityodia@gmail.com"
-    admin_password = "musiccityodia12345"
+    admin_password = "musiccitodia12345"
     try:
         hashed = bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         existing = execute_query_one("SELECT id FROM users WHERE email = %s", [admin_email])
@@ -607,3 +622,10 @@ def update_booking_status(booking_id: Any, new_status: str) -> Optional[Dict[str
         "UPDATE bookings SET status = %s WHERE id = %s RETURNING *",
         [new_status, bid]
     )
+
+
+def delete_booking(booking_id: Any) -> bool:
+    bid = int(booking_id) if str(booking_id).isdigit() else booking_id
+    execute_query("DELETE FROM bookings WHERE id = %s", [bid])
+    return True
+

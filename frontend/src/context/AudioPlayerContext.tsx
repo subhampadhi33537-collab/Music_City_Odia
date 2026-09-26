@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { api } from '../services/api';
+import { api, resolveAssetUrl } from '../services/api';
 
 export interface Song {
   id: string;
@@ -113,12 +113,12 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let audioUrl = '';
     
     if (preview) {
-      audioUrl = song.preview_url;
+      audioUrl = resolveAssetUrl(song.preview_url);
     } else {
       try {
         // Query backend for full stream URL
         const streamData = await api.songs.getStreamUrl(song.id);
-        audioUrl = streamData.stream_url;
+        audioUrl = resolveAssetUrl(streamData.stream_url);
       } catch (err: any) {
         setError(err.message || 'Access denied: You must buy this song first.');
         setLoading(false);
@@ -127,14 +127,27 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     }
 
+    if (!audioUrl) {
+      setError('Audio stream URL is not available.');
+      setLoading(false);
+      setIsPlaying(false);
+      return;
+    }
+
     try {
+      audioRef.current.pause();
       audioRef.current.src = audioUrl;
       audioRef.current.load();
       await audioRef.current.play();
       setIsPlaying(true);
-    } catch (err) {
-      console.error('Audio play error:', err);
-      setError('Playback failed. Please try again.');
+      setError(null);
+    } catch (err: any) {
+      console.error('Audio play error for URL:', audioUrl, err);
+      if (err && err.name === 'NotAllowedError') {
+        setError('Playback paused: Browser requires a user click to start audio.');
+      } else {
+        setError('Playback failed. Please try again.');
+      }
       setIsPlaying(false);
     } finally {
       setLoading(false);

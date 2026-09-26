@@ -15,7 +15,7 @@ load_dotenv(env_path)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 GOOGLE_DRIVE_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "1zur8UsA64ko5cBtXXLQl0aInPLmI2U8m")
 ADMIN_EMAIL = "musiccityodia@gmail.com"
-ADMIN_PASSWORD = "musiccityodia12345"
+ADMIN_PASSWORD = "musiccitodia12345"
 
 
 def setup():
@@ -107,8 +107,17 @@ def setup():
                 phone TEXT NOT NULL,
                 service TEXT NOT NULL,
                 message TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
+
+            -- Ensure columns exist if table was created previously with older schema
+            ALTER TABLE songs ADD COLUMN IF NOT EXISTS album TEXT;
+            ALTER TABLE songs ADD COLUMN IF NOT EXISTS lyrics TEXT;
+            ALTER TABLE songs ADD COLUMN IF NOT EXISTS drive_file_id TEXT;
+            ALTER TABLE songs ADD COLUMN IF NOT EXISTS drive_web_link TEXT;
+            ALTER TABLE songs ADD COLUMN IF NOT EXISTS drive_download_link TEXT;
+            ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
         """)
         conn.commit()
         print("[OK] Tables created or verified.")

@@ -12,7 +12,9 @@ import {
   HardDrive,
   ExternalLink,
   ShieldCheck,
-  Radio
+  Radio,
+  Calendar,
+  ArrowRight
 } from 'lucide-react';
 import { Card3D } from '../components/Card3D';
 import logoImg from '../assets/logo.png';
@@ -30,20 +32,23 @@ interface Stats {
   total_songs_sold: number;
   recent_signups: number;
   top_selling_songs: TopSong[];
+  total_bookings?: number;
 }
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [driveStatus, setDriveStatus] = useState<any>(null);
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [statsData, driveData] = await Promise.allSettled([
+        const [statsData, driveData, bookingsData] = await Promise.allSettled([
           api.admin.getStats(),
-          api.admin.getDriveStatus()
+          api.admin.getDriveStatus(),
+          api.admin.listBookings(),
         ]);
         
         if (statsData.status === 'fulfilled') {
@@ -54,6 +59,10 @@ export const AdminDashboard: React.FC = () => {
 
         if (driveData.status === 'fulfilled') {
           setDriveStatus(driveData.value);
+        }
+
+        if (bookingsData.status === 'fulfilled') {
+          setRecentBookings(bookingsData.value || []);
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load administrator statistics.');
@@ -124,6 +133,18 @@ export const AdminDashboard: React.FC = () => {
             <ShoppingCart className="w-4 h-4" />
             <span>Sales History</span>
           </Link>
+          <Link
+            to="/admin/bookings"
+            className="btn-3d-secondary flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold text-amber-300 border border-amber-500/30 hover:bg-amber-500/10"
+          >
+            <Calendar className="w-4 h-4 text-amber-400" />
+            <span>Bookings & Leads</span>
+            {recentBookings.filter((b) => b.status === 'pending').length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-black">
+                {recentBookings.filter((b) => b.status === 'pending').length}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
 
@@ -166,7 +187,7 @@ export const AdminDashboard: React.FC = () => {
       </Card3D>
 
       {/* 3D Interactive Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Revenue card with 3D tilt */}
         <Card3D maxTilt={10}>
@@ -196,20 +217,132 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </Card3D>
 
+        {/* Studio Bookings card with 3D tilt */}
+        <Link to="/admin/bookings" className="block h-full">
+          <Card3D maxTilt={10}>
+            <div className="glass-3d p-6 rounded-2xl flex items-center justify-between gap-4 h-full border border-amber-500/25 hover:border-amber-500/50 transition-all">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-studio-muted uppercase tracking-wider">Studio Bookings</span>
+                <p className="text-3xl sm:text-4xl font-black text-amber-300">
+                  {stats?.total_bookings || recentBookings.length || 0}
+                </p>
+                <p className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
+                  <span>Manage Leads</span>
+                  <ArrowRight className="w-3 h-3" />
+                </p>
+              </div>
+              <div className="w-13 h-13 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/20">
+                <Calendar className="w-7 h-7" />
+              </div>
+            </div>
+          </Card3D>
+        </Link>
+
         {/* Recent signups card with 3D tilt */}
         <Card3D maxTilt={10}>
           <div className="glass-3d p-6 rounded-2xl flex items-center justify-between gap-4 h-full">
             <div className="space-y-1">
               <span className="text-xs font-bold text-studio-muted uppercase tracking-wider">Signups (Last 7 Days)</span>
               <p className="text-3xl sm:text-4xl font-black text-white">{stats?.recent_signups || 0}</p>
-              <p className="text-[11px] text-amber-400 font-semibold">New Audience Accounts</p>
+              <p className="text-[11px] text-sky-400 font-semibold">New Audience Accounts</p>
             </div>
-            <div className="w-13 h-13 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/20">
+            <div className="w-13 h-13 bg-sky-500/15 border border-sky-500/30 rounded-2xl flex items-center justify-center text-sky-400 shadow-lg shadow-sky-500/20">
               <UserPlus className="w-7 h-7" />
             </div>
           </div>
         </Card3D>
 
+      </div>
+
+      {/* Recent Studio Bookings & Contact Requests */}
+      <div className="glass-3d border border-white/10 rounded-2xl p-6 sm:p-8 space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-2.5 text-white">
+            <Calendar className="w-6 h-6 text-amber-400" />
+            <div>
+              <h2 className="text-xl font-bold">Recent Studio Inquiries & Contact Leads</h2>
+              <p className="text-xs text-studio-muted">Customer requests for recording, dubbing, mixing, and studio sessions.</p>
+            </div>
+          </div>
+          <Link
+            to="/admin/bookings"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors"
+          >
+            <span>View All ({recentBookings.length})</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {recentBookings.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-400">
+              <thead className="bg-white/[0.04] text-xs text-white uppercase font-bold border-b border-white/10">
+                <tr>
+                  <th className="px-5 py-3.5">Customer</th>
+                  <th className="px-5 py-3.5">Contact</th>
+                  <th className="px-5 py-3.5">Service</th>
+                  <th className="px-5 py-3.5">Date</th>
+                  <th className="px-5 py-3.5 text-center">Status</th>
+                  <th className="px-5 py-3.5 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {recentBookings.slice(0, 5).map((booking) => (
+                  <tr key={booking.id} className="hover:bg-white/[0.03] transition-colors">
+                    <td className="px-5 py-4">
+                      <span className="text-white font-bold block">{booking.name}</span>
+                      <span className="text-[11px] text-studio-muted block truncate max-w-[200px]">
+                        {booking.message || 'No notes'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-xs font-mono text-gray-300">
+                      <div>{booking.phone}</div>
+                      {booking.email && <div className="text-[10px] text-studio-muted">{booking.email}</div>}
+                    </td>
+                    <td className="px-5 py-4 text-xs font-bold capitalize text-amber-300">
+                      {booking.service || 'Studio Session'}
+                    </td>
+                    <td className="px-5 py-4 text-xs text-studio-muted">
+                      {new Date(booking.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span
+                        className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          booking.status === 'confirmed'
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : booking.status === 'contacted'
+                            ? 'bg-sky-500/20 text-sky-400'
+                            : booking.status === 'completed'
+                            ? 'bg-purple-500/20 text-purple-400'
+                            : 'bg-amber-500/20 text-amber-400'
+                        }`}
+                      >
+                        {booking.status || 'pending'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link
+                        to="/admin/bookings"
+                        className="text-xs font-bold text-studio-accent hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Details</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-studio-muted text-sm">
+            <Calendar className="w-8 h-8 mx-auto mb-2 text-white/20" />
+            No customer inquiries yet.
+          </div>
+        )}
       </div>
 
       {/* Top Selling Table with 3D Card wrapper */}
